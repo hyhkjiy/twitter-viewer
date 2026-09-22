@@ -36,29 +36,29 @@ const DEFAULT_CONFIG = {
   threshold: 0.15,    // 多标签概率阈值：概率 >= 阈值才作为附加标签
   maxLabels: 3,       // 每条书签最多标签数
   categories: [
-    { id: 'tool', label: '工具', description: 'GitHub repos, CLI tools, npm packages, open-source projects' },
-    { id: 'security', label: '安全', description: 'CVEs, vulnerabilities, exploits, supply chain' },
-    { id: 'technique', label: '技巧', description: 'Tutorials, demos, code patterns, how I built X' },
-    { id: 'launch', label: '发布', description: 'Product launches, announcements, just shipped' },
-    { id: 'research', label: '研究', description: 'ArXiv papers, studies, academic findings' },
-    { id: 'opinion', label: '观点', description: 'Takes, analysis, commentary, threads' },
-    { id: 'commerce', label: '商业', description: 'Products, shopping, physical goods' },
+    { id: 'tool', label: '工具', description: '可直接使用或安装的软件作品：GitHub 仓库、CLI 工具、npm/pip 包、开源项目、SDK。典型信号：链接指向 github.com、『我开源了 X』『做了个工具』。不是：教怎么写的教程（→技巧）、上线公告（→发布）。' },
+    { id: 'security', label: '安全', description: '安全相关内容：CVE 漏洞、漏洞利用与攻击手法、供应链安全、数据隐私泄露、安全工具与研究。' },
+    { id: 'technique', label: '技巧', description: '教怎么做的方法类内容：教程、演示、代码片段、实现思路、工程复盘、『如何搭建 X』。典型信号：step-by-step、guide、tutorial、讲方法的 thread。不是：直接分享一个现成工具（→工具）、上线公告（→发布）。' },
+    { id: 'launch', label: '发布', description: '产品/版本的发布与公告：上线、v2.0、『just shipped』、新功能宣布、里程碑、发布会。典型信号：announcement、launch、『今天上线』。不是：工具本身的介绍（→工具）。' },
+    { id: 'research', label: '研究', description: '学术研究内容：arXiv 论文、论文解读、实验与评测结果、学术讨论。典型信号：链接指向 arxiv.org、paper、论文。' },
+    { id: 'opinion', label: '观点', description: '作者的个人看法与评论：判断、预测、争论、点评模型/公司/行业、经验与反思。典型信号：『我认为』『说实话』『这很糟糕』『我赌』。不是：分享链接或工具（→工具）、教程（→技巧）、上线公告（→发布）。' },
+    { id: 'commerce', label: '商业', description: '消费与商业内容：实物商品、硬件产品、购物优惠、商业模式、融资与公司动态。不是：软件工具（→工具）、软件发布（→发布）。' },
   ],
   domains: [
-    { id: 'llm', label: '大模型', description: '大模型 / LLM：模型发布、训练、推理、提示词工程、多模态' },
-    { id: 'agent', label: 'Agent', description: 'AI Agent：智能体框架、多智能体协作、浏览器代理、任务自动化' },
-    { id: 'rag', label: 'RAG/知识库', description: 'RAG / 知识库：检索增强、向量库、文档问答、知识管理' },
-    { id: 'ai-coding', label: 'AI 编程', description: 'AI 编程：AI 编程助手、代码生成、代码审查、IDE 插件' },
-    { id: 'ai-tools', label: 'AI 工具', description: 'AI 应用产品：面向用户的 AI 工具、镜像站、效率工具' },
-    { id: 'frontend', label: '前端', description: '前端 / Web：框架、UI、浏览器、JavaScript、样式' },
-    { id: 'backend', label: '后端', description: '后端 / 服务端：API、数据库、中间件、语言实现' },
-    { id: 'devops', label: '运维/云原生', description: '运维 / 云原生：K8s、部署、CI/CD、基础设施、可观测' },
-    { id: 'security', label: '安全', description: '安全：漏洞、攻防、数据隐私、供应链安全' },
-    { id: 'web3', label: 'Web3', description: 'Web3 / 区块链 / 加密货币' },
-    { id: 'hardware', label: '硬件/机器人', description: '硬件 / 机器人 / 嵌入式 / 开源硬件' },
-    { id: 'paper', label: '论文', description: '论文 / 学术研究 / arXiv' },
-    { id: 'career', label: '职业/副业', description: '职业 / 副业 / 赚钱 / 效率 / 成长' },
-    { id: 'other', label: '其他', description: '其他：无法归入上述领域的内容' },
+    { id: 'llm', label: '大模型', description: '大模型 / LLM 技术：模型发布与权重、训练、微调、推理、提示词工程、多模态、上下文工程。典型信号：GPT、Claude、DeepSeek、Qwen、训练、微调、token。' },
+    { id: 'agent', label: 'Agent', description: 'AI Agent：智能体框架、多智能体协作、浏览器代理、任务自动化、工具调用与编排。典型信号：agent、browser use、MCP。不是：模型本身（→大模型）。' },
+    { id: 'rag', label: 'RAG/知识库', description: 'RAG / 知识库：检索增强、向量库、文档问答、知识管理、embedding。典型信号：RAG、向量、embedding、知识库。' },
+    { id: 'ai-coding', label: 'AI 编程', description: 'AI 编程：AI 编程助手、代码生成、代码审查、IDE 插件。典型信号：Claude Code、Cursor、Copilot、补全、code review。' },
+    { id: 'ai-tools', label: 'AI 工具', description: '面向用户的 AI 应用产品：AI 网站/镜像站、效率工具、可打开即用的 AI 应用体验。不是：编程类（→AI 编程）、模型技术（→大模型）。' },
+    { id: 'frontend', label: '前端', description: '前端 / Web：框架、UI、浏览器、JavaScript/TypeScript、样式与交互。' },
+    { id: 'backend', label: '后端', description: '后端 / 服务端：API、数据库、中间件、语言实现、服务端架构。' },
+    { id: 'devops', label: '运维/云原生', description: '运维 / 云原生：K8s、部署、CI/CD、基础设施、可观测性、DevOps。' },
+    { id: 'security', label: '安全', description: '安全：漏洞、攻防、数据隐私、供应链安全、安全工具。' },
+    { id: 'web3', label: 'Web3', description: 'Web3 / 区块链 / 加密货币：链、Token、DeFi、智能合约、NFT。' },
+    { id: 'hardware', label: '硬件/机器人', description: '硬件 / 机器人 / 嵌入式：开源硬件、PCB、机械、机器人、嵌入式开发。' },
+    { id: 'paper', label: '论文', description: '论文 / 学术：arXiv 论文、论文解读、学术讨论、研究结果。典型信号：arxiv.org、paper。注：以大模型为主体的论文归大模型。' },
+    { id: 'career', label: '职业/副业', description: '个人职业与副业：求职、简历、面试、职业成长、副业赚钱、个人效率、学习方法、创业。典型信号：『怎么找工作』『副业』『涨薪』『效率』『方法论』。不是：技术内容本身（→对应技术领域）。' },
+    { id: 'other', label: '其他', description: '其他：无法归入以上任何领域的内容（生活、新闻、杂谈等）。仅当其他 13 个领域都不匹配时选择。' },
   ],
 };
 
@@ -250,6 +250,18 @@ function saveMap(kind) {
 }
 
 // ---------- jev 多标签分类 ----------
+// 拼装打分输入：正文 + 链接域名（github.com / arxiv.org 等是强信号；作者名经实测是噪声，x.com 指原帖无信息量）
+const NOISE_HOSTS = new Set(['x.com', 'twitter.com']);
+function buildScoreState(bm) {
+  const parts = [];
+  if (bm.text) parts.push('内容：' + bm.text);
+  const hosts = (bm.links || [])
+    .map((u) => { try { return new URL(u).hostname.replace(/^www\./, ''); } catch { return ''; } })
+    .filter((h) => h && !NOISE_HOSTS.has(h));
+  if (hosts.length) parts.push('链接域名：' + [...new Set(hosts)].join(', '));
+  return parts.join('\n').slice(0, 3000);
+}
+
 async function scoreLabels(text, options) {
   const isDomain = options === config.domains;
   const body = JSON.stringify({
@@ -305,7 +317,7 @@ function runJob(ids, kind) {
       const bm = byId.get(id);
       job.current = id;
       try {
-        maps[kind][id] = await scoreLabels(bm.text, options);
+        maps[kind][id] = await scoreLabels(buildScoreState(bm), options);
         if (job.done % 10 === 0) saveMap(kind); // 增量落盘，重启可续
       } catch (e) {
         job.errors++;

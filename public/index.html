@@ -43,6 +43,11 @@
   .fchip { border: 1px solid var(--border); background: #fff; border-radius: 999px; padding: 4px 12px; font-size: 12px; cursor: pointer; color: var(--text); }
   .fchip:hover { border-color: var(--accent); }
   .fchip.is-inc { border-color: var(--accent); background: #eff6ff; color: #1d4ed8; }
+  .rchip { border: 1px solid var(--border); background: #fff; border-radius: 999px; padding: 4px 12px; font-size: 12px; cursor: pointer; color: var(--text); display: inline-flex; align-items: center; gap: 5px; }
+  .rchip input[type=radio] { margin: 0; accent-color: var(--accent); }
+  .rchip:hover { border-color: var(--accent); }
+  .rchip:has(input:checked) { border-color: var(--accent); background: #eff6ff; color: #1d4ed8; }
+  .radio-row { display: flex; flex-wrap: wrap; gap: 6px; }
   .filters input[type=text], .filters select, .filters input[type=date] { padding: 7px 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; background: #fff; color: var(--text); }
   #fAuthor { width: 170px; }
   .fbar-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; }
@@ -54,6 +59,7 @@
   .btn.ghost { background: #eef2f7; color: var(--text); }
   .btn:disabled { opacity: .5; cursor: not-allowed; }
   .btn.sm { padding: 5px 10px; font-size: 12px; }
+  .load-more { display: block; margin: 14px auto 0; }
   .mt { margin-top: 12px; }
 
   .charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; margin-bottom: 16px; }
@@ -143,7 +149,7 @@
   <div id="errBox" class="err" style="display:none"></div>
 
   <nav class="tabs">
-    <button class="tab active" data-page="articles">文章</button>
+    <button class="tab active" data-page="articles">帖子</button>
     <button class="tab" data-page="charts">图表</button>
     <button class="tab" data-page="tools">工具</button>
     <button class="tab" data-page="settings">设置</button>
@@ -159,7 +165,7 @@
         <div class="fgroup">
           <div class="fg-head">
             <span class="lbl">分类</span>
-            <span class="hint">点选=包含（多选取交集）· 再点取消</span>
+            <span class="hint">点选=包含（同层取并集 · 跨层取交集）· 再点取消</span>
           </div>
           <div class="chipbox" id="catChips"></div>
         </div>
@@ -168,24 +174,26 @@
           <div class="chipbox" id="domChips"></div>
         </div>
         <div class="fgroup">
+          <span class="lbl">时间</span>
+          <span class="radio-row" id="presetRow">
+            <label class="rchip"><input type="radio" name="fPreset" value="">不限</label>
+            <label class="rchip"><input type="radio" name="fPreset" value="7d">近 7 天</label>
+            <label class="rchip"><input type="radio" name="fPreset" value="30d">近 30 天</label>
+            <label class="rchip"><input type="radio" name="fPreset" value="month">本月</label>
+            <label class="rchip"><input type="radio" name="fPreset" value="year">今年</label>
+            <label class="rchip"><input type="radio" name="fPreset" value="custom">自定义</label>
+          </span>
+          <span class="lbl">从</span>
+          <input type="date" id="fFrom">
+          <span class="lbl">至</span>
+          <input type="date" id="fTo">
+        </div>
+        <div class="fgroup">
           <span class="lbl">作者</span>
           <input type="text" id="fAuthor" list="authorList" placeholder="输入作者名…">
           <datalist id="authorList"></datalist>
           <span class="lbl">语言</span>
           <select id="fLang"><option value="">全部</option></select>
-          <span class="lbl">时间</span>
-          <select id="fPreset">
-            <option value="">不限</option>
-            <option value="7d">近 7 天</option>
-            <option value="30d">近 30 天</option>
-            <option value="month">本月</option>
-            <option value="year">今年</option>
-            <option value="custom">自定义</option>
-          </select>
-          <span class="lbl">从</span>
-          <input type="date" id="fFrom">
-          <span class="lbl">至</span>
-          <input type="date" id="fTo">
         </div>
       </div>
     </div>
@@ -200,31 +208,12 @@
     </div>
 
     <div class="card">
-      <div class="classify-head">
-        <div>
-          <b>LLM 多标签分类</b>
-          <span class="lbl" id="classifyInfo"></span>
-        </div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <button class="btn sm" id="btnAll">分类全部（分类）</button>
-          <button class="btn sm" id="btnDomain">分类全部（领域）</button>
-          <button class="btn sm" id="btnFiltered">分类当前筛选结果</button>
-          <button class="btn ghost sm" id="btnAllForce">重新分类全部</button>
-        </div>
-      </div>
-      <div id="classifyStatus" class="lbl mt" style="min-height:16px"></div>
-      <div class="progress" id="progressWrap" style="display:none"><div id="progressBar"></div></div>
-      <details class="tips mt"><summary>说明</summary>
-        分类通过本机 jev 路由服务（Qwen3.5-4B /score）逐条打分：概率最高的标签必选，其余概率 ≥ 阈值（默认 0.15）的标签一并保留，最多 3 个。
-        分类/领域定义、并发数、阈值都可在「设置」页里改。结果实时落盘（categories-jev.json / domains-jev.json），中途停止可续。
-        点任意书签卡片的「编辑标签」可手动调整。
-      </details>
-    </div>
-
-    <div class="card">
       <div class="list-head">
         <h2>书签列表</h2>
-        <span class="count" id="resultCount"></span>
+        <span style="display:flex;gap:8px;align-items:center">
+          <span class="count" id="resultCount"></span>
+          <button class="btn ghost sm" id="btnCopy" title="复制当前筛选结果的所有帖子与原文链接">复制帖子</button>
+        </span>
       </div>
       <div id="list"></div>
     </div>
@@ -290,6 +279,29 @@
         <span class="lbl" id="cfgStatus"></span>
       </div>
     </div>
+
+    <div class="card">
+      <div class="classify-head">
+        <div>
+          <b>LLM 多标签分类</b>
+          <span class="lbl" id="classifyInfo"></span>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn sm" id="btnAll">分类全部（分类）</button>
+          <button class="btn sm" id="btnDomain">分类全部（领域）</button>
+          <button class="btn sm" id="btnFiltered">分类当前筛选结果</button>
+          <button class="btn ghost sm" id="btnAllForce">重新分类全部</button>
+          <button class="btn ghost sm" id="btnDomainForce">重新分类全部（领域）</button>
+        </div>
+      </div>
+      <div id="classifyStatus" class="lbl mt" style="min-height:16px"></div>
+      <div class="progress" id="progressWrap" style="display:none"><div id="progressBar"></div></div>
+      <details class="tips mt"><summary>说明</summary>
+        分类通过本机 jev 路由服务（Qwen3.5-4B /score）逐条打分：概率最高的标签必选，其余概率 ≥ 阈值（默认 0.15）的标签一并保留，最多 3 个。
+        结果实时落盘（categories-jev.json / domains-jev.json），中途停止可续。
+        点任意书签卡片的「编辑标签」可手动调整。
+      </details>
+    </div>
   </div>
 </div>
 
@@ -308,6 +320,8 @@
 const PALETTE = ['#3b82f6','#ef4444','#10b981','#f59e0b','#8b5cf6','#ec4899','#14b8a6','#7c3aed','#2563eb','#0d9488','#059669','#db2777','#475569','#0891b2','#dc2626','#9333ea','#65a30d','#ea580c','#f97316','#71717a'];
 let all = [];        // 全部书签
 let filtered = [];   // 当前筛选结果
+const LIST_PAGE_SIZE = 80; // 列表每页条数
+let listPage = 0;    // 列表已加载页数（0 起）
 let config = { concurrency: 3, threshold: 0.15, maxLabels: 3, categories: [], domains: [] };
 let jobTimer = null;
 let activeBookmark = null;
@@ -361,22 +375,23 @@ let domSel = new Set();
 function selState(kind) { return kind === 'category' ? catSel : domSel; }
 function labelCounts(kind) {
   const counts = {}; let unc = 0;
-  for (const b of all) { const ls = b[kind] || []; if (ls.length) ls.forEach((l) => counts[l] = (counts[l] || 0) + 1); else unc++; }
+  for (const b of all) {
+    if (!matchesContext(b, kind)) continue; // 数量跟随当前上下文（时间/关键词/作者/语言等），排除本类筛选自身
+    const ls = b[kind] || []; if (ls.length) ls.forEach((l) => counts[l] = (counts[l] || 0) + 1); else unc++;
+  }
   return { counts, unc };
 }
 function renderFilterChips(kind, containerId) {
   const defs = config[kind === 'category' ? 'categories' : 'domains'];
   const { counts, unc } = labelCounts(kind);
   const s = selState(kind);
-  let html = defs.map((d) => {
-    const on = s.has(d.id);
-    return `<button type="button" class="fchip${on ? ' is-inc' : ''}" data-kind="${kind}" data-id="${esc(d.id)}" title="${on ? '点击取消' : '点击包含'}">${esc(d.label)}（${counts[d.id] || 0}）</button>`;
+  const rows = defs.map((d) => ({ id: d.id, label: d.label, n: counts[d.id] || 0 }));
+  if (unc > 0) rows.push({ id: UNC, label: '未分类', n: unc });
+  rows.sort((a, b) => b.n - a.n);
+  $(containerId).innerHTML = rows.map((r) => {
+    const on = s.has(r.id);
+    return `<button type="button" class="fchip${on ? ' is-inc' : ''}" data-kind="${kind}" data-id="${esc(r.id)}" title="${r.id === UNC ? '未分类' : (on ? '点击取消' : '点击包含')}">${esc(r.label)}（${r.n}）</button>`;
   }).join('');
-  if (unc > 0) {
-    const on = s.has(UNC);
-    html += `<button type="button" class="fchip${on ? ' is-inc' : ''}" data-kind="${kind}" data-id="${UNC}" title="未分类">未分类（${unc}）</button>`;
-  }
-  $(containerId).innerHTML = html;
 }
 function fillAuthorList() {
   const names = [...new Set(all.map((b) => b.authorHandle || ''))].filter(Boolean).sort((a, b) => a.localeCompare(b));
@@ -390,8 +405,15 @@ function shiftDate(base, days) {
   d.setDate(d.getDate() + days);
   return localDate(d);
 }
+function presetValue() {
+  const el = document.querySelector('input[name=fPreset]:checked');
+  return el ? el.value : '';
+}
+function setPreset(v) {
+  document.querySelectorAll('input[name=fPreset]').forEach((el) => { el.checked = el.value === v; });
+}
 function applyPreset() {
-  const v = $('fPreset').value;
+  const v = presetValue();
   const today = localDate(new Date());
   if (!v) { $('fFrom').value = ''; $('fTo').value = ''; }
   else if (v === '7d') { $('fFrom').value = shiftDate(today, -6); $('fTo').value = today; }
@@ -408,36 +430,37 @@ function fillLangSelect() {
 }
 
 function matchSel(b, kind, sel) {
-  const ls = b[kind] || [];
   if (!sel.size) return true;
-  for (const id of sel) {
-    if (id === UNC) { if (ls.length) return false; }
-    else if (!ls.includes(id)) return false;
+  const ls = b[kind] || [];
+  const hasUnc = sel.has(UNC);
+  const ids = [...sel].filter((id) => id !== UNC);
+  if (ids.some((id) => ls.includes(id))) return true; // 同层取并集：命中任一选中标签即可
+  return hasUnc && !ls.length; // 只命中未分类：帖子无任何标签
+}
+
+function matchesContext(b, skipKind) {
+  const q = $('q').value.trim().toLowerCase();
+  if (q) {
+    const hay = (b.text + ' ' + (b.authorHandle || '') + ' ' + (b.authorName || '') + ' ' + (b.links || []).join(' ')).toLowerCase();
+    if (!hay.includes(q)) return false;
   }
+  const author = $('fAuthor').value.trim();
+  if (author && !(b.authorHandle || '').toLowerCase().includes(author.toLowerCase())) return false;
+  const lang = $('fLang').value;
+  if (lang) { const l = b.language || '(未知)'; if (l !== lang) return false; }
+  const from = $('fFrom').value, to = $('fTo').value;
+  if (from) { const d = fmtDate(b.postedAt); if (d && d < from) return false; }
+  if (to) { const d = fmtDate(b.postedAt); if (d && d > to) return false; }
+  if (skipKind !== 'category' && !matchSel(b, 'category', catSel)) return false;
+  if (skipKind !== 'domain' && !matchSel(b, 'domain', domSel)) return false;
   return true;
 }
 
 function apply() {
-  const q = $('q').value.trim().toLowerCase();
-  const author = $('fAuthor').value.trim();
-  const lang = $('fLang').value;
-  const from = $('fFrom').value;
-  const to = $('fTo').value;
+  filtered = all.filter((b) => matchesContext(b, null));
 
-  filtered = all.filter((b) => {
-    if (q) {
-      const hay = (b.text + ' ' + (b.authorHandle || '') + ' ' + (b.authorName || '') + ' ' + (b.links || []).join(' ')).toLowerCase();
-      if (!hay.includes(q)) return false;
-    }
-    if (!matchSel(b, 'category', catSel)) return false;
-    if (!matchSel(b, 'domain', domSel)) return false;
-    if (author && !(b.authorHandle || '').toLowerCase().includes(author.toLowerCase())) return false;
-    if (lang) { const l = b.language || '(未知)'; if (l !== lang) return false; }
-    if (from) { const d = fmtDate(b.postedAt); if (d && d < from) return false; }
-    if (to) { const d = fmtDate(b.postedAt); if (d && d > to) return false; }
-    return true;
-  });
-
+  renderFilterChips('category', 'catChips');
+  renderFilterChips('domain', 'domChips');
   renderFilterBar();
   renderChips();
   renderCharts();
@@ -475,7 +498,7 @@ function clearFilter(key) {
   if (key === 'q') $('q').value = '';
   else if (key === 'author') $('fAuthor').value = '';
   else if (key === 'lang') $('fLang').value = '';
-  else if (key === 'date') { $('fFrom').value = ''; $('fTo').value = ''; $('fPreset').value = ''; }
+  else if (key === 'date') { $('fFrom').value = ''; $('fTo').value = ''; setPreset(''); }
   else {
     const i = key.indexOf(':');
     const kind = key.slice(0, i);
@@ -486,7 +509,7 @@ function clearFilter(key) {
 }
 
 function clearAllFilters() {
-  $('q').value = ''; $('fAuthor').value = ''; $('fLang').value = ''; $('fFrom').value = ''; $('fTo').value = ''; $('fPreset').value = '';
+  $('q').value = ''; $('fAuthor').value = ''; $('fLang').value = ''; $('fFrom').value = ''; $('fTo').value = ''; setPreset('');
   catSel = new Set();
   domSel = new Set();
   renderFilterChips('category', 'catChips');
@@ -558,44 +581,74 @@ function renderCharts() {
   bars($('authorChart'), topA, () => 'var(--accent)');
 }
 
+function cardHtml(b) {
+  const catBadges = (b.category || []).map((id) => `<span class="badge" style="background:${colorFor('category', id)}">${esc(labelFor('category', id))}</span>`).join('');
+  const domBadges = (b.domain || []).map((id) => `<span class="badge" style="background:${colorFor('domain', id)}">${esc(labelFor('domain', id))}</span>`).join('');
+  const uncBadge = !(b.category || []).length ? '<span class="badge" style="background:var(--none)">未分类</span>' : '';
+  const mediaHtml = (b.media || []).length ? `<div class="media">${(b.media || []).map((m) => `
+    <a href="${esc(m.expandedUrl || b.url)}" target="_blank" rel="noopener" class="media-item${m.type === 'video' || m.type === 'animated_gif' ? ' is-video' : ''}">
+      <img src="${esc(m.thumb)}" loading="lazy" alt="">
+      ${m.type === 'video' || m.type === 'animated_gif' ? '<span class="play">▶</span>' : ''}
+    </a>`).join('')}</div>` : '';
+  const links = (b.links || []).slice(0, 4)
+    .map((u) => `<a href="${esc(u)}" target="_blank" rel="noopener">${esc(String(u).replace(/^https?:\/\//, '').slice(0, 40))}</a>`).join('');
+  const eng = b.engagement && (b.engagement.likeCount || b.engagement.bookmarkCount)
+    ? `<span class="eng">♡ ${b.engagement.likeCount || 0} · 收藏 ${b.engagement.bookmarkCount || 0}</span>` : '';
+  const direct = b.url ? `<a class="btn ghost sm" href="${esc(b.url)}" target="_blank" rel="noopener">直达原帖 ↗</a>` : '';
+  return `<div class="bm" data-id="${esc(b.id)}">
+    <div class="meta">
+      <span class="author">@${esc(b.authorHandle || '未知')}</span>
+      <span>${esc(fmtDate(b.postedAt))}</span>
+      ${b.language ? `<span class="tag">${esc(b.language)}</span>` : ''}
+      ${catBadges}${uncBadge}${domBadges}
+      ${eng}
+    </div>
+    <div class="text clamp" data-full="${esc(b.text)}">${esc(b.text)}</div>
+    ${(b.text || '').length > 180 ? '<button class="expand" data-expand="1">展开全文</button>' : ''}
+    ${mediaHtml}
+    ${links ? `<div class="links">${links}</div>` : ''}
+    <div class="bm-actions">
+      ${direct}
+      <button class="btn ghost sm" data-edit="${esc(b.id)}">编辑标签</button>
+    </div>
+  </div>`;
+}
+
+function renderMoreButton() {
+  const shown = Math.min((listPage + 1) * LIST_PAGE_SIZE, filtered.length);
+  let btn = document.getElementById('loadMore');
+  if (shown >= filtered.length) { if (btn) btn.remove(); return; }
+  if (!btn) {
+    btn = document.createElement('button');
+    btn.id = 'loadMore';
+    btn.className = 'btn ghost sm load-more';
+    $('list').appendChild(btn);
+  }
+  btn.textContent = `加载更多（已显示 ${shown} / ${filtered.length}）`;
+}
+
+function loadMore() {
+  listPage++;
+  const start = listPage * LIST_PAGE_SIZE;
+  const holder = document.createElement('div');
+  holder.innerHTML = filtered.slice(start, start + LIST_PAGE_SIZE).map(cardHtml).join('');
+  const btn = document.getElementById('loadMore');
+  while (holder.firstChild) btn.parentNode.insertBefore(holder.firstChild, btn);
+  renderMoreButton();
+}
+
 function renderList() {
   $('resultCount').textContent = `${filtered.length} / ${all.length} 条`;
+  $('btnCopy').textContent = filtered.length ? `复制${filtered.length}条帖子` : '复制帖子';
   if (!filtered.length) { $('list').innerHTML = '<div class="empty">没有匹配的书签</div>'; return; }
-  $('list').innerHTML = filtered.map((b) => {
-    const catBadges = (b.category || []).map((id) => `<span class="badge" style="background:${colorFor('category', id)}">${esc(labelFor('category', id))}</span>`).join('');
-    const domBadges = (b.domain || []).map((id) => `<span class="badge" style="background:${colorFor('domain', id)}">${esc(labelFor('domain', id))}</span>`).join('');
-    const uncBadge = !(b.category || []).length ? '<span class="badge" style="background:var(--none)">未分类</span>' : '';
-    const mediaHtml = (b.media || []).length ? `<div class="media">${(b.media || []).map((m) => `
-      <a href="${esc(m.expandedUrl || b.url)}" target="_blank" rel="noopener" class="media-item${m.type === 'video' || m.type === 'animated_gif' ? ' is-video' : ''}">
-        <img src="${esc(m.thumb)}" loading="lazy" alt="">
-        ${m.type === 'video' || m.type === 'animated_gif' ? '<span class="play">▶</span>' : ''}
-      </a>`).join('')}</div>` : '';
-    const links = (b.links || []).slice(0, 4)
-      .map((u) => `<a href="${esc(u)}" target="_blank" rel="noopener">${esc(String(u).replace(/^https?:\/\//, '').slice(0, 40))}</a>`).join('');
-    const eng = b.engagement && (b.engagement.likeCount || b.engagement.bookmarkCount)
-      ? `<span class="eng">♡ ${b.engagement.likeCount || 0} · 收藏 ${b.engagement.bookmarkCount || 0}</span>` : '';
-    const direct = b.url ? `<a class="btn ghost sm" href="${esc(b.url)}" target="_blank" rel="noopener">直达原帖 ↗</a>` : '';
-    return `<div class="bm" data-id="${esc(b.id)}">
-      <div class="meta">
-        <span class="author">@${esc(b.authorHandle || '未知')}</span>
-        <span>${esc(fmtDate(b.postedAt))}</span>
-        ${b.language ? `<span class="tag">${esc(b.language)}</span>` : ''}
-        ${catBadges}${uncBadge}${domBadges}
-        ${eng}
-      </div>
-      <div class="text clamp" data-full="${esc(b.text)}">${esc(b.text)}</div>
-      ${(b.text || '').length > 180 ? '<button class="expand" data-expand="1">展开全文</button>' : ''}
-      ${mediaHtml}
-      ${links ? `<div class="links">${links}</div>` : ''}
-      <div class="bm-actions">
-        ${direct}
-        <button class="btn ghost sm" data-edit="${esc(b.id)}">编辑标签</button>
-      </div>
-    </div>`;
-  }).join('');
+  listPage = 0;
+  $('list').innerHTML = filtered.slice(0, LIST_PAGE_SIZE).map(cardHtml).join('');
+  renderMoreButton();
 }
 
 $('list').addEventListener('click', (e) => {
+  const more = e.target.closest('#loadMore');
+  if (more) { loadMore(); return; }
   const edit = e.target.closest('[data-edit]');
   if (edit) { const b = all.find((x) => x.id === edit.dataset.edit); if (b) openLabelEditor(b); return; }
   const btn = e.target.closest('.expand');
@@ -604,6 +657,40 @@ $('list').addEventListener('click', (e) => {
   const t = bm.querySelector('.text');
   if (btn.dataset.expand === '1') { t.classList.remove('clamp'); t.textContent = t.dataset.full; btn.textContent = '收起'; btn.dataset.expand = '0'; }
   else { t.classList.add('clamp'); btn.textContent = '展开全文'; btn.dataset.expand = '1'; }
+});
+
+// ---------- 复制筛选结果 ----------
+function buildCopyText() {
+  return filtered.map((b) => {
+    const head = `@${b.authorHandle || '未知'} · ${fmtDate(b.postedAt) || ''}`;
+    return [head, (b.text || '').trim(), b.url ? `原文：${b.url}` : ''].filter(Boolean).join('\n');
+  }).join('\n\n---\n\n');
+}
+function copyToClipboard(text) {
+  if (navigator.clipboard && window.isSecureContext) return navigator.clipboard.writeText(text);
+  return new Promise((resolve, reject) => {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy') ? resolve() : reject(new Error('复制失败')); }
+    catch (e) { reject(e); }
+    finally { document.body.removeChild(ta); }
+  });
+}
+$('btnCopy').addEventListener('click', async () => {
+  if (!filtered.length) { alert('当前筛选结果为空，无可复制内容'); return; }
+  const btn = $('btnCopy');
+  try {
+    await copyToClipboard(buildCopyText());
+    const old = btn.textContent;
+    btn.textContent = '已复制 ✓';
+    setTimeout(() => { btn.textContent = old; }, 2000);
+  } catch (e) {
+    alert('复制失败：' + e.message);
+  }
 });
 
 // ---------- 设置面板 ----------
@@ -753,15 +840,16 @@ async function startClassify(ids, force, kind) {
 
 $('btnAll').addEventListener('click', () => startClassify(null, false, 'category'));
 $('btnAllForce').addEventListener('click', () => startClassify(null, true, 'category'));
+$('btnDomainForce').addEventListener('click', () => startClassify(null, true, 'domain'));
 $('btnDomain').addEventListener('click', () => startClassify(null, false, 'domain'));
 $('btnFiltered').addEventListener('click', () => startClassify(filtered.map((b) => b.id), false, 'category'));
 
 $('q').addEventListener('input', apply);
 $('fAuthor').addEventListener('input', apply);
 $('fLang').addEventListener('change', apply);
-$('fFrom').addEventListener('change', () => { $('fPreset').value = 'custom'; apply(); });
-$('fTo').addEventListener('change', () => { $('fPreset').value = 'custom'; apply(); });
-$('fPreset').addEventListener('change', () => { applyPreset(); apply(); });
+$('fFrom').addEventListener('change', () => { setPreset('custom'); apply(); });
+$('fTo').addEventListener('change', () => { setPreset('custom'); apply(); });
+$('presetRow').addEventListener('change', (e) => { if (e.target.name === 'fPreset') { applyPreset(); apply(); } });
 $('filterChips').addEventListener('click', (e) => {
   const chip = e.target.closest('.active-chip');
   if (chip) { clearFilter(chip.dataset.key); apply(); }
@@ -921,10 +1009,21 @@ $('taskList').addEventListener('click', (e) => {
 });
 
 // ---------- 标签页 ----------
+const PAGES = ['articles', 'charts', 'tools', 'settings'];
+function switchTab(page) {
+  document.querySelectorAll('.tab').forEach((x) => x.classList.toggle('active', x.dataset.page === page));
+  document.querySelectorAll('.page').forEach((p) => p.classList.toggle('active', p.id === 'page-' + page));
+}
 document.querySelectorAll('.tab').forEach((t) => t.addEventListener('click', () => {
-  document.querySelectorAll('.tab').forEach((x) => x.classList.toggle('active', x === t));
-  document.querySelectorAll('.page').forEach((p) => p.classList.toggle('active', p.id === 'page-' + t.dataset.page));
+  switchTab(t.dataset.page);
+  history.replaceState(null, '', '#' + t.dataset.page); // 写进 URL，刷新/分享后仍停留当前页
 }));
+window.addEventListener('hashchange', () => {
+  const page = location.hash.slice(1);
+  if (PAGES.includes(page)) switchTab(page);
+});
+const initialPage = location.hash.slice(1);
+if (PAGES.includes(initialPage)) switchTab(initialPage);
 
 load();
 refreshStatus();

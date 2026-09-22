@@ -374,6 +374,7 @@ async function handleApi(req, res, url) {
         postedAt: b.postedAt || null,
         links: Array.isArray(b.links) ? b.links.map(String) : [],
         engagement: b.engagement || {},
+        followerCount: (b.author && b.author.followerCount) || 0,
         media: compactMedia(b.mediaObjects),
         category: maps.category[b.id] || [],
         domain: maps.domain[b.id] || [],

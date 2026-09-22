@@ -1,0 +1,9 @@
+{
+  "name": "twitter-viewer",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Twitter/X 书签本地可视化工作台：搜索 / 多标签分类 / 筛选 / 图表",
+  "scripts": {
+    "start": "node server.js"
+  }
+}

@@ -1,0 +1,936 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Field Theory 书签工作台</title>
+<style>
+  :root {
+    --bg: #f6f7f9; --card: #ffffff; --border: #e3e6ea; --text: #1f2430; --muted: #6b7280; --accent: #3b82f6; --none: #9ca3af;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Segoe UI", "Microsoft YaHei", sans-serif; background: var(--bg); color: var(--text); font-size: 14px; }
+  .wrap { max-width: 1200px; margin: 0 auto; padding: 20px; }
+
+  header { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
+  header h1 { font-size: 20px; }
+  header .sub { color: var(--muted); }
+  .chips { display: flex; gap: 8px; flex-wrap: wrap; }
+  .chip { background: var(--card); border: 1px solid var(--border); border-radius: 999px; padding: 4px 12px; font-size: 12px; color: var(--muted); }
+  .chip b { color: var(--text); }
+
+  .tabs { display: flex; gap: 4px; margin-bottom: 16px; border-bottom: 1px solid var(--border); }
+  .tab { border: none; background: none; padding: 9px 14px; font-size: 14px; cursor: pointer; color: var(--muted); border-bottom: 2px solid transparent; margin-bottom: -1px; }
+  .tab:hover { color: var(--text); }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
+  .page { display: none; }
+  .page.active { display: block; }
+
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; margin-bottom: 16px; }
+  .controls { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .controls input[type=text], .controls select, .controls input[type=date], .controls input[type=number] {
+    padding: 7px 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; background: #fff; color: var(--text);
+  }
+  .controls input[type=text] { flex: 1; min-width: 200px; }
+  .lbl { font-size: 12px; color: var(--muted); margin-right: 4px; }
+
+  .filters { display: flex; flex-direction: column; gap: 10px; }
+  .fgroup { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .fgroup.fg-full input[type=text] { flex: 1; min-width: 240px; }
+  .fg-head { display: flex; align-items: baseline; gap: 8px; width: 100%; }
+  .fg-head .hint { font-size: 11px; color: var(--muted); }
+  .chipbox { display: flex; flex-wrap: wrap; gap: 6px; }
+  .fchip { border: 1px solid var(--border); background: #fff; border-radius: 999px; padding: 4px 12px; font-size: 12px; cursor: pointer; color: var(--text); }
+  .fchip:hover { border-color: var(--accent); }
+  .fchip.is-inc { border-color: var(--accent); background: #eff6ff; color: #1d4ed8; }
+  .filters input[type=text], .filters select, .filters input[type=date] { padding: 7px 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; background: #fff; color: var(--text); }
+  #fAuthor { width: 170px; }
+  .fbar-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; }
+  .active-chip { display: inline-flex; align-items: center; gap: 5px; cursor: pointer; }
+  .active-chip .x { font-weight: 700; color: var(--muted); }
+  .active-chip:hover { border-color: #f87171; }
+  .active-chip:hover .x { color: #dc2626; }
+  .btn { border: none; border-radius: 8px; padding: 8px 14px; font-size: 13px; cursor: pointer; background: var(--accent); color: #fff; }
+  .btn.ghost { background: #eef2f7; color: var(--text); }
+  .btn:disabled { opacity: .5; cursor: not-allowed; }
+  .btn.sm { padding: 5px 10px; font-size: 12px; }
+  .mt { margin-top: 12px; }
+
+  .charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; margin-bottom: 16px; }
+  .chart h3 { font-size: 13px; color: var(--muted); font-weight: 600; margin-bottom: 10px; }
+  .bar-row { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; font-size: 12px; }
+  .bar-row .name { width: 96px; text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--muted); }
+  .bar-track { flex: 1; background: #eef0f3; border-radius: 4px; height: 14px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 4px; min-width: 1px; }
+  .bar-row .val { width: 42px; color: var(--text); font-variant-numeric: tabular-nums; }
+  .legend { display: flex; flex-wrap: wrap; gap: 8px; font-size: 12px; color: var(--muted); }
+  .dot { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 4px; vertical-align: -1px; }
+
+  .cfg-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 16px; margin-top: 12px; }
+  .cfg-grid h4 { font-size: 13px; color: var(--muted); margin-bottom: 8px; }
+  .cfg-row { display: flex; gap: 6px; margin-bottom: 6px; align-items: center; }
+  .cfg-row input { padding: 6px 8px; border: 1px solid var(--border); border-radius: 6px; font-size: 12px; }
+  .cfg-row .cfg-label { width: 90px; }
+  .cfg-row .cfg-desc { flex: 1; }
+
+  .classify-head { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+  .progress { height: 8px; background: #eef0f3; border-radius: 999px; margin-top: 10px; overflow: hidden; }
+  .progress > div { height: 100%; background: var(--accent); width: 0; transition: width .3s; }
+
+  .list-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 10px; }
+  .list-head h2 { font-size: 15px; }
+  .list-head .count { color: var(--muted); font-size: 13px; }
+
+  .bm { border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; margin-bottom: 10px; background: #fff; }
+  .bm .meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 6px; font-size: 12px; color: var(--muted); }
+  .bm .author { color: var(--text); font-weight: 600; }
+  .bm .text { font-size: 13.5px; line-height: 1.6; white-space: pre-wrap; word-break: break-word; }
+  .bm .text.clamp { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+  .bm .links { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 6px; }
+  .bm .links a { font-size: 12px; color: var(--accent); text-decoration: none; border: 1px solid var(--border); padding: 2px 8px; border-radius: 999px; max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .badge { font-size: 11px; padding: 2px 8px; border-radius: 999px; color: #fff; font-weight: 600; }
+  .eng { font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .expand { border: none; background: none; color: var(--accent); font-size: 12px; cursor: pointer; margin-top: 6px; padding: 0; }
+  .empty { text-align: center; color: var(--muted); padding: 40px 0; }
+  .tag { background: #eef2f7; color: #374151; border-radius: 4px; padding: 1px 6px; font-size: 11px; }
+  .err { background: #fef2f2; border: 1px solid #fecaca; color: #b91c1c; border-radius: 8px; padding: 10px 14px; margin-bottom: 16px; font-size: 13px; }
+  details.tips summary { cursor: pointer; font-size: 12px; color: var(--muted); }
+  details.tips { font-size: 12px; color: var(--muted); margin-top: 10px; line-height: 1.7; }
+
+  .bm-actions { margin-top: 8px; display: flex; gap: 8px; align-items: center; }
+  .media { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 6px; margin-top: 8px; }
+  .media-item { position: relative; display: block; border-radius: 8px; overflow: hidden; border: 1px solid var(--border); aspect-ratio: 1; }
+  .media-item img { width: 100%; height: 100%; object-fit: cover; display: block; background: #eef0f3; }
+  .media-item .play { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 22px; background: rgba(0,0,0,.25); }
+
+  .modal { position: fixed; inset: 0; background: rgba(15,20,30,.45); display: none; align-items: flex-start; justify-content: center; padding: 40px 16px; z-index: 50; overflow: auto; }
+  .modal-box { background: #fff; border-radius: 12px; padding: 18px; width: 100%; max-width: 560px; box-shadow: 0 12px 40px rgba(0,0,0,.18); }
+  .modal-box h3 { font-size: 15px; margin-bottom: 12px; }
+  .lm-group { margin-bottom: 12px; }
+  .lm-group h4 { font-size: 13px; color: var(--muted); margin-bottom: 6px; }
+  .cb-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+  .cb { display: inline-flex; align-items: center; gap: 5px; font-size: 13px; border: 1px solid var(--border); border-radius: 8px; padding: 5px 10px; cursor: pointer; background: #fff; }
+  .cb:has(input:checked) { border-color: var(--accent); background: #eff6ff; }
+
+  .cmd-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px; }
+  .cmd-btn { display: flex; flex-direction: column; gap: 4px; text-align: left; background: #fff; border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; cursor: pointer; }
+  .cmd-btn:hover { border-color: var(--accent); }
+  .cmd-btn .cmd-name { font-size: 13px; font-weight: 600; color: var(--text); }
+  .cmd-btn .cmd-desc { font-size: 11px; color: var(--muted); line-height: 1.5; }
+
+  .task { border: 1px solid var(--border); border-radius: 10px; background: #fff; margin-bottom: 10px; overflow: hidden; }
+  .task-head { display: flex; align-items: center; gap: 10px; padding: 10px 14px; cursor: pointer; flex-wrap: wrap; }
+  .task-head:hover { background: #fafbfc; }
+  .task-name { font-weight: 600; font-size: 13px; }
+  .st { font-size: 11px; padding: 2px 8px; border-radius: 999px; color: #fff; font-weight: 600; }
+  .st.queued { background: #f59e0b; } .st.running { background: #3b82f6; } .st.done { background: #10b981; } .st.error { background: #ef4444; } .st.cancelled { background: #9ca3af; }
+  .task-time { font-size: 11px; color: var(--muted); flex: 1; }
+  .task-out { display: none; border-top: 1px solid var(--border); background: #0f172a; color: #d1d5db; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; line-height: 1.55; padding: 10px 14px; max-height: 360px; overflow: auto; white-space: pre-wrap; word-break: break-all; }
+  .task.open .task-out { display: block; }
+  .task-out .prompt { color: #22d3ee; }
+  .task-out .tail { color: #9ca3af; font-size: 11px; }
+  .empty-muted { text-align: center; color: var(--muted); padding: 24px 0; font-size: 13px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Field Theory 书签工作台</h1>
+    <span class="sub">本地可视化 · 多标签分类 · 搜索</span>
+    <div class="chips" id="chips"></div>
+  </header>
+
+  <div id="errBox" class="err" style="display:none"></div>
+
+  <nav class="tabs">
+    <button class="tab active" data-page="articles">文章</button>
+    <button class="tab" data-page="charts">图表</button>
+    <button class="tab" data-page="tools">工具</button>
+    <button class="tab" data-page="settings">设置</button>
+  </nav>
+
+  <div class="page active" id="page-articles">
+    <div class="card">
+      <div class="filters">
+        <div class="fgroup fg-full">
+          <span class="lbl">关键词</span>
+          <input type="text" id="q" placeholder="标题 / 正文 / 作者 / 链接域名…">
+        </div>
+        <div class="fgroup">
+          <div class="fg-head">
+            <span class="lbl">分类</span>
+            <span class="hint">点选=包含（多选取交集）· 再点取消</span>
+          </div>
+          <div class="chipbox" id="catChips"></div>
+        </div>
+        <div class="fgroup">
+          <div class="fg-head"><span class="lbl">领域</span></div>
+          <div class="chipbox" id="domChips"></div>
+        </div>
+        <div class="fgroup">
+          <span class="lbl">作者</span>
+          <input type="text" id="fAuthor" list="authorList" placeholder="输入作者名…">
+          <datalist id="authorList"></datalist>
+          <span class="lbl">语言</span>
+          <select id="fLang"><option value="">全部</option></select>
+          <span class="lbl">时间</span>
+          <select id="fPreset">
+            <option value="">不限</option>
+            <option value="7d">近 7 天</option>
+            <option value="30d">近 30 天</option>
+            <option value="month">本月</option>
+            <option value="year">今年</option>
+            <option value="custom">自定义</option>
+          </select>
+          <span class="lbl">从</span>
+          <input type="date" id="fFrom">
+          <span class="lbl">至</span>
+          <input type="date" id="fTo">
+        </div>
+      </div>
+    </div>
+
+    <div class="card" id="filterBar" style="display:none">
+      <div class="fbar-head">
+        <b>已应用筛选</b>
+        <span class="lbl" id="fbarCount"></span>
+        <button class="btn ghost sm" id="btnClearFilters">清空全部</button>
+      </div>
+      <div class="chips" id="filterChips"></div>
+    </div>
+
+    <div class="card">
+      <div class="classify-head">
+        <div>
+          <b>LLM 多标签分类</b>
+          <span class="lbl" id="classifyInfo"></span>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn sm" id="btnAll">分类全部（分类）</button>
+          <button class="btn sm" id="btnDomain">分类全部（领域）</button>
+          <button class="btn sm" id="btnFiltered">分类当前筛选结果</button>
+          <button class="btn ghost sm" id="btnAllForce">重新分类全部</button>
+        </div>
+      </div>
+      <div id="classifyStatus" class="lbl mt" style="min-height:16px"></div>
+      <div class="progress" id="progressWrap" style="display:none"><div id="progressBar"></div></div>
+      <details class="tips mt"><summary>说明</summary>
+        分类通过本机 jev 路由服务（Qwen3.5-4B /score）逐条打分：概率最高的标签必选，其余概率 ≥ 阈值（默认 0.15）的标签一并保留，最多 3 个。
+        分类/领域定义、并发数、阈值都可在「设置」页里改。结果实时落盘（categories-jev.json / domains-jev.json），中途停止可续。
+        点任意书签卡片的「编辑标签」可手动调整。
+      </details>
+    </div>
+
+    <div class="card">
+      <div class="list-head">
+        <h2>书签列表</h2>
+        <span class="count" id="resultCount"></span>
+      </div>
+      <div id="list"></div>
+    </div>
+  </div>
+
+  <div class="page" id="page-charts">
+    <div class="charts">
+      <div class="card chart"><h3>分类分布</h3><div id="catChart"></div><div class="legend mt" id="catLegend"></div></div>
+      <div class="card chart"><h3>领域分布</h3><div id="domainChart"></div><div class="legend mt" id="domainLegend"></div></div>
+      <div class="card chart"><h3>月度收藏趋势（近 24 个月）</h3><div id="monthChart"></div></div>
+      <div class="card chart"><h3>Top 作者</h3><div id="authorChart"></div></div>
+    </div>
+  </div>
+
+  <div class="page" id="page-tools">
+    <div class="card">
+      <div class="list-head">
+        <h2>命令工具</h2>
+        <span class="lbl">一键运行 ft CLI 命令 · 长任务排队执行 · 输出实时查看</span>
+      </div>
+      <div class="cmd-grid" id="cmdGrid"></div>
+      <details class="tips mt"><summary>说明</summary>
+        点击按钮将命令加入队列，同一时间只执行一个，其余排队。运行中可随时切换页面，输出会持续记录，回来点开任务即可查看完整日志。
+        任务列表保存在服务端内存中（重启清空）；可点「取消」终止排队中或运行中的任务。
+      </details>
+    </div>
+
+    <div class="card">
+      <div class="list-head">
+        <h2>任务队列</h2>
+        <span class="count" id="taskCount"></span>
+      </div>
+      <div id="taskList"><div class="empty-muted">暂无任务</div></div>
+    </div>
+  </div>
+
+  <div class="page" id="page-settings">
+    <div class="card">
+      <div class="list-head">
+        <h2>设置</h2>
+        <span class="lbl">分类 / 领域定义 · 并发 · 多标签阈值</span>
+      </div>
+      <div class="cfg-grid">
+        <div>
+          <h4>分类定义（标签名 + 给本地模型的描述）</h4>
+          <div id="catEditor"></div>
+          <button class="btn ghost sm mt" id="addCat">+ 添加分类</button>
+        </div>
+        <div>
+          <h4>领域定义</h4>
+          <div id="domEditor"></div>
+          <button class="btn ghost sm mt" id="addDom">+ 添加领域</button>
+        </div>
+      </div>
+      <div class="controls mt">
+        <span class="lbl">并发数</span>
+        <input type="number" id="cfgConcurrency" min="1" style="width:70px">
+        <span class="lbl">多标签阈值</span>
+        <input type="number" id="cfgThreshold" min="0" max="1" step="0.05" style="width:80px">
+        <span class="lbl">最多标签</span>
+        <input type="number" id="cfgMaxLabels" min="1" max="5" style="width:70px">
+        <button class="btn sm" id="saveConfig">保存设置</button>
+        <span class="lbl" id="cfgStatus"></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="labelModal">
+  <div class="modal-box">
+    <h3 id="lmTitle"></h3>
+    <div id="lmBody"></div>
+    <div style="margin-top:12px;display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn ghost" id="lmCancel">取消</button>
+      <button class="btn" id="lmSave">保存标签</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const PALETTE = ['#3b82f6','#ef4444','#10b981','#f59e0b','#8b5cf6','#ec4899','#14b8a6','#7c3aed','#2563eb','#0d9488','#059669','#db2777','#475569','#0891b2','#dc2626','#9333ea','#65a30d','#ea580c','#f97316','#71717a'];
+let all = [];        // 全部书签
+let filtered = [];   // 当前筛选结果
+let config = { concurrency: 3, threshold: 0.15, maxLabels: 3, categories: [], domains: [] };
+let jobTimer = null;
+let activeBookmark = null;
+
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+function fmtDate(s) {
+  if (!s) return '';
+  const d = new Date(s);
+  return isNaN(d) ? '' : d.toISOString().slice(0, 10);
+}
+function monthKey(s) {
+  if (!s) return null;
+  const d = new Date(s);
+  return isNaN(d) ? null : d.toISOString().slice(0, 7);
+}
+function labelFor(kind, id) {
+  const d = config[kind === 'category' ? 'categories' : 'domains'].find((x) => x.id === id);
+  return d ? d.label : id;
+}
+function colorFor(kind, id) {
+  const defs = config[kind === 'category' ? 'categories' : 'domains'];
+  const idx = defs.findIndex((d) => d.id === id);
+  return PALETTE[idx % PALETTE.length] || '#9ca3af';
+}
+
+async function load() {
+  try {
+    const [br, cr] = await Promise.all([fetch('/api/bookmarks'), fetch('/api/config')]);
+    if (!br.ok || !cr.ok) throw new Error('HTTP 错误');
+    all = (await br.json()).bookmarks;
+    config = await cr.json();
+    renderFilterChips('category', 'catChips');
+    renderFilterChips('domain', 'domChips');
+    fillAuthorList();
+    fillLangSelect();
+    renderConfigForm();
+    apply();
+  } catch (e) {
+    showErr('加载失败：' + e.message + '（请确认服务已启动）');
+  }
+}
+
+function showErr(msg) { const el = $('errBox'); el.textContent = msg; el.style.display = 'block'; }
+
+const UNC = '__unc__';
+let catSel = new Set();
+let domSel = new Set();
+
+function selState(kind) { return kind === 'category' ? catSel : domSel; }
+function labelCounts(kind) {
+  const counts = {}; let unc = 0;
+  for (const b of all) { const ls = b[kind] || []; if (ls.length) ls.forEach((l) => counts[l] = (counts[l] || 0) + 1); else unc++; }
+  return { counts, unc };
+}
+function renderFilterChips(kind, containerId) {
+  const defs = config[kind === 'category' ? 'categories' : 'domains'];
+  const { counts, unc } = labelCounts(kind);
+  const s = selState(kind);
+  let html = defs.map((d) => {
+    const on = s.has(d.id);
+    return `<button type="button" class="fchip${on ? ' is-inc' : ''}" data-kind="${kind}" data-id="${esc(d.id)}" title="${on ? '点击取消' : '点击包含'}">${esc(d.label)}（${counts[d.id] || 0}）</button>`;
+  }).join('');
+  if (unc > 0) {
+    const on = s.has(UNC);
+    html += `<button type="button" class="fchip${on ? ' is-inc' : ''}" data-kind="${kind}" data-id="${UNC}" title="未分类">未分类（${unc}）</button>`;
+  }
+  $(containerId).innerHTML = html;
+}
+function fillAuthorList() {
+  const names = [...new Set(all.map((b) => b.authorHandle || ''))].filter(Boolean).sort((a, b) => a.localeCompare(b));
+  $('authorList').innerHTML = names.map((a) => `<option value="${esc(a)}">`).join('');
+}
+function localDate(d) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+function shiftDate(base, days) {
+  const d = new Date(base + 'T00:00:00');
+  d.setDate(d.getDate() + days);
+  return localDate(d);
+}
+function applyPreset() {
+  const v = $('fPreset').value;
+  const today = localDate(new Date());
+  if (!v) { $('fFrom').value = ''; $('fTo').value = ''; }
+  else if (v === '7d') { $('fFrom').value = shiftDate(today, -6); $('fTo').value = today; }
+  else if (v === '30d') { $('fFrom').value = shiftDate(today, -29); $('fTo').value = today; }
+  else if (v === 'month') { $('fFrom').value = today.slice(0, 7) + '-01'; $('fTo').value = today; }
+  else if (v === 'year') { $('fFrom').value = today.slice(0, 4) + '-01-01'; $('fTo').value = today; }
+}
+function fillLangSelect() {
+  const counts = {};
+  for (const b of all) { const l = b.language || '(未知)'; counts[l] = (counts[l] || 0) + 1; }
+  const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+  $('fLang').innerHTML = '<option value="">全部语言</option>' +
+    sorted.map(([l, n]) => `<option value="${esc(l)}">${esc(l || '(未知)')}（${n}）</option>`).join('');
+}
+
+function matchSel(b, kind, sel) {
+  const ls = b[kind] || [];
+  if (!sel.size) return true;
+  for (const id of sel) {
+    if (id === UNC) { if (ls.length) return false; }
+    else if (!ls.includes(id)) return false;
+  }
+  return true;
+}
+
+function apply() {
+  const q = $('q').value.trim().toLowerCase();
+  const author = $('fAuthor').value.trim();
+  const lang = $('fLang').value;
+  const from = $('fFrom').value;
+  const to = $('fTo').value;
+
+  filtered = all.filter((b) => {
+    if (q) {
+      const hay = (b.text + ' ' + (b.authorHandle || '') + ' ' + (b.authorName || '') + ' ' + (b.links || []).join(' ')).toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    if (!matchSel(b, 'category', catSel)) return false;
+    if (!matchSel(b, 'domain', domSel)) return false;
+    if (author && !(b.authorHandle || '').toLowerCase().includes(author.toLowerCase())) return false;
+    if (lang) { const l = b.language || '(未知)'; if (l !== lang) return false; }
+    if (from) { const d = fmtDate(b.postedAt); if (d && d < from) return false; }
+    if (to) { const d = fmtDate(b.postedAt); if (d && d > to) return false; }
+    return true;
+  });
+
+  renderFilterBar();
+  renderChips();
+  renderCharts();
+  renderList();
+}
+
+function filterChipLabel(kind, id) { return id === UNC ? '未分类' : labelFor(kind, id); }
+
+function activeFilters() {
+  const list = [];
+  const q = $('q').value.trim();
+  if (q) list.push({ key: 'q', label: '关键词：' + q });
+  for (const [kind, kindName] of [['category', '分类'], ['domain', '领域']]) {
+    const s = selState(kind);
+    for (const id of s) list.push({ key: kind + ':' + id, label: kindName + '：' + filterChipLabel(kind, id) });
+  }
+  const author = $('fAuthor').value.trim();
+  if (author) list.push({ key: 'author', label: '作者：' + author });
+  const lang = $('fLang').value;
+  if (lang) list.push({ key: 'lang', label: '语言：' + lang });
+  const from = $('fFrom').value, to = $('fTo').value;
+  if (from || to) list.push({ key: 'date', label: '时间：' + (from || '…') + ' ~ ' + (to || '…') });
+  return list;
+}
+
+function renderFilterBar() {
+  const acts = activeFilters();
+  $('filterChips').innerHTML = acts.map((a) =>
+    `<button type="button" class="chip active-chip" data-key="${esc(a.key)}" title="移除该条件">${esc(a.label)} <span class="x">✕</span></button>`).join('');
+  $('filterBar').style.display = acts.length ? 'block' : 'none';
+  if (acts.length) $('fbarCount').textContent = `${filtered.length} / ${all.length} 条`;
+}
+
+function clearFilter(key) {
+  if (key === 'q') $('q').value = '';
+  else if (key === 'author') $('fAuthor').value = '';
+  else if (key === 'lang') $('fLang').value = '';
+  else if (key === 'date') { $('fFrom').value = ''; $('fTo').value = ''; $('fPreset').value = ''; }
+  else {
+    const i = key.indexOf(':');
+    const kind = key.slice(0, i);
+    const id = key.slice(i + 1);
+    selState(kind).delete(id);
+    renderFilterChips(kind, kind === 'category' ? 'catChips' : 'domChips');
+  }
+}
+
+function clearAllFilters() {
+  $('q').value = ''; $('fAuthor').value = ''; $('fLang').value = ''; $('fFrom').value = ''; $('fTo').value = ''; $('fPreset').value = '';
+  catSel = new Set();
+  domSel = new Set();
+  renderFilterChips('category', 'catChips');
+  renderFilterChips('domain', 'domChips');
+  apply();
+}
+
+function renderChips() {
+  const total = all.length;
+  const authors = new Set(all.map((b) => b.authorHandle)).size;
+  const classified = all.filter((b) => (b.category || []).length).length;
+  const domainClassified = all.filter((b) => (b.domain || []).length).length;
+  const langZh = all.filter((b) => b.language === 'zh').length;
+  const range = (() => {
+    let min = '', max = '';
+    for (const b of all) { const d = fmtDate(b.postedAt); if (!d) continue; if (!min || d < min) min = d; if (!max || d > max) max = d; }
+    return min ? min + ' ~ ' + max : '';
+  })();
+  $('chips').innerHTML =
+    `<span class="chip">书签 <b>${total}</b></span>` +
+    `<span class="chip">作者 <b>${authors}</b></span>` +
+    `<span class="chip">已分类 <b>${classified}</b> / ${total}</span>` +
+    `<span class="chip">已分领域 <b>${domainClassified}</b> / ${total}</span>` +
+    `<span class="chip">中文 <b>${langZh}</b></span>` +
+    `<span class="chip">并发 <b>${config.concurrency}</b></span>` +
+    (range ? `<span class="chip">${range}</span>` : '');
+}
+
+function bars(el, rows, colorFn) {
+  const max = Math.max(...rows.map((r) => r.value), 1);
+  el.innerHTML = rows.map((r) => `
+    <div class="bar-row">
+      <span class="name" title="${esc(r.name)}">${esc(r.name)}</span>
+      <div class="bar-track"><div class="bar-fill" style="width:${(r.value / max * 100).toFixed(1)}%;background:${colorFn(r)}"></div></div>
+      <span class="val">${r.value}</span>
+    </div>`).join('');
+}
+
+function labelDist(kind) {
+  const counts = {}; let unc = 0;
+  for (const b of all) { const ls = b[kind] || []; if (ls.length) ls.forEach((l) => counts[l] = (counts[l] || 0) + 1); else unc++; }
+  const rows = config[kind === 'category' ? 'categories' : 'domains']
+    .filter((d) => counts[d.id])
+    .map((d) => ({ name: d.label, value: counts[d.id], color: colorFor(kind, d.id) }));
+  if (unc > 0) rows.push({ name: '未分类', value: unc, color: '#9ca3af' });
+  return rows;
+}
+
+function renderCharts() {
+  const catRows = labelDist('category');
+  bars($('catChart'), catRows, (r) => r.color);
+  $('catLegend').innerHTML = catRows.map((r) => `<span><span class="dot" style="background:${r.color}"></span>${r.name} ${r.value}</span>`).join('');
+
+  const domRows = labelDist('domain');
+  bars($('domainChart'), domRows, (r) => r.color);
+  $('domainLegend').innerHTML = domRows.map((r) => `<span><span class="dot" style="background:${r.color}"></span>${r.name} ${r.value}</span>`).join('');
+
+  const months = {};
+  for (const b of filtered) { const m = monthKey(b.postedAt); if (m) months[m] = (months[m] || 0) + 1; }
+  const keys = Object.keys(months).sort().slice(-24);
+  const maxM = Math.max(...keys.map((k) => months[k]), 1);
+  $('monthChart').innerHTML = '<div style="display:flex;align-items:flex-end;gap:2px;height:120px">' +
+    keys.map((k) => `<div style="flex:1;background:var(--accent);opacity:.85;border-radius:2px 2px 0 0;height:${(months[k] / maxM * 100).toFixed(1)}%;min-height:2px" title="${k}：${months[k]}"></div>`).join('') + '</div>' +
+    `<div style="display:flex;gap:2px;font-size:10px;color:var(--muted)"><span>${keys[0] || ''}</span><span style="flex:1;text-align:center">${keys[Math.floor(keys.length / 2)] || ''}</span><span>${keys[keys.length - 1] || ''}</span></div>`;
+
+  const ac = {};
+  for (const b of all) { const a = b.authorHandle || '(未知)'; ac[a] = (ac[a] || 0) + 1; }
+  const topA = Object.entries(ac).sort((a, b) => b[1] - a[1]).slice(0, 12).map(([n, v]) => ({ name: n, value: v }));
+  bars($('authorChart'), topA, () => 'var(--accent)');
+}
+
+function renderList() {
+  $('resultCount').textContent = `${filtered.length} / ${all.length} 条`;
+  if (!filtered.length) { $('list').innerHTML = '<div class="empty">没有匹配的书签</div>'; return; }
+  $('list').innerHTML = filtered.map((b) => {
+    const catBadges = (b.category || []).map((id) => `<span class="badge" style="background:${colorFor('category', id)}">${esc(labelFor('category', id))}</span>`).join('');
+    const domBadges = (b.domain || []).map((id) => `<span class="badge" style="background:${colorFor('domain', id)}">${esc(labelFor('domain', id))}</span>`).join('');
+    const uncBadge = !(b.category || []).length ? '<span class="badge" style="background:var(--none)">未分类</span>' : '';
+    const mediaHtml = (b.media || []).length ? `<div class="media">${(b.media || []).map((m) => `
+      <a href="${esc(m.expandedUrl || b.url)}" target="_blank" rel="noopener" class="media-item${m.type === 'video' || m.type === 'animated_gif' ? ' is-video' : ''}">
+        <img src="${esc(m.thumb)}" loading="lazy" alt="">
+        ${m.type === 'video' || m.type === 'animated_gif' ? '<span class="play">▶</span>' : ''}
+      </a>`).join('')}</div>` : '';
+    const links = (b.links || []).slice(0, 4)
+      .map((u) => `<a href="${esc(u)}" target="_blank" rel="noopener">${esc(String(u).replace(/^https?:\/\//, '').slice(0, 40))}</a>`).join('');
+    const eng = b.engagement && (b.engagement.likeCount || b.engagement.bookmarkCount)
+      ? `<span class="eng">♡ ${b.engagement.likeCount || 0} · 收藏 ${b.engagement.bookmarkCount || 0}</span>` : '';
+    const direct = b.url ? `<a class="btn ghost sm" href="${esc(b.url)}" target="_blank" rel="noopener">直达原帖 ↗</a>` : '';
+    return `<div class="bm" data-id="${esc(b.id)}">
+      <div class="meta">
+        <span class="author">@${esc(b.authorHandle || '未知')}</span>
+        <span>${esc(fmtDate(b.postedAt))}</span>
+        ${b.language ? `<span class="tag">${esc(b.language)}</span>` : ''}
+        ${catBadges}${uncBadge}${domBadges}
+        ${eng}
+      </div>
+      <div class="text clamp" data-full="${esc(b.text)}">${esc(b.text)}</div>
+      ${(b.text || '').length > 180 ? '<button class="expand" data-expand="1">展开全文</button>' : ''}
+      ${mediaHtml}
+      ${links ? `<div class="links">${links}</div>` : ''}
+      <div class="bm-actions">
+        ${direct}
+        <button class="btn ghost sm" data-edit="${esc(b.id)}">编辑标签</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+$('list').addEventListener('click', (e) => {
+  const edit = e.target.closest('[data-edit]');
+  if (edit) { const b = all.find((x) => x.id === edit.dataset.edit); if (b) openLabelEditor(b); return; }
+  const btn = e.target.closest('.expand');
+  if (!btn) return;
+  const bm = btn.closest('.bm');
+  const t = bm.querySelector('.text');
+  if (btn.dataset.expand === '1') { t.classList.remove('clamp'); t.textContent = t.dataset.full; btn.textContent = '收起'; btn.dataset.expand = '0'; }
+  else { t.classList.add('clamp'); btn.textContent = '展开全文'; btn.dataset.expand = '1'; }
+});
+
+// ---------- 设置面板 ----------
+function renderConfigForm() {
+  $('cfgConcurrency').value = config.concurrency;
+  $('cfgThreshold').value = config.threshold;
+  $('cfgMaxLabels').value = config.maxLabels;
+  renderDefEditor('categories', 'catEditor');
+  renderDefEditor('domains', 'domEditor');
+}
+function renderDefEditor(kind, containerId) {
+  const c = $(containerId);
+  c.innerHTML = config[kind].map((d) => `
+    <div class="cfg-row" data-id="${esc(d.id)}">
+      <input class="cfg-label" value="${esc(d.label)}" placeholder="标签名">
+      <input class="cfg-desc" value="${esc(d.description)}" placeholder="给本地模型看的描述">
+      <button class="btn ghost sm cfg-del" title="删除">删除</button>
+    </div>`).join('');
+}
+function collectDefs(containerId) {
+  return [...$(containerId).querySelectorAll('.cfg-row')].map((row) => ({
+    id: row.dataset.id,
+    label: row.querySelector('.cfg-label').value.trim(),
+    description: row.querySelector('.cfg-desc').value.trim(),
+  })).filter((d) => d.label);
+}
+function addDefRow(kind) {
+  const n = config[kind].length + 1;
+  config[kind].push({ id: (kind === 'categories' ? 'cat' : 'dom') + '-' + Date.now().toString(36), label: '新标签' + n, description: '' });
+  renderDefEditor(kind, kind === 'categories' ? 'catEditor' : 'domEditor');
+}
+$('addCat').addEventListener('click', () => addDefRow('categories'));
+$('addDom').addEventListener('click', () => addDefRow('domains'));
+document.addEventListener('click', (e) => {
+  const del = e.target.closest('.cfg-del');
+  if (!del) return;
+  const row = del.closest('.cfg-row');
+  const kind = row.closest('#catEditor') ? 'categories' : 'domains';
+  config[kind] = config[kind].filter((d) => d.id !== row.dataset.id);
+  renderDefEditor(kind, kind === 'categories' ? 'catEditor' : 'domEditor');
+});
+$('saveConfig').addEventListener('click', async () => {
+  const body = {
+    categories: collectDefs('catEditor'),
+    domains: collectDefs('domEditor'),
+    concurrency: Math.max(1, Math.floor(Number($('cfgConcurrency').value) || 1)),
+    threshold: Math.max(0, Math.min(1, Number($('cfgThreshold').value) || 0.15)),
+    maxLabels: Math.max(1, Math.min(5, Number($('cfgMaxLabels').value) || 3)),
+  };
+  try {
+    const r = await fetch('/api/config', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    config = await r.json();
+    $('cfgStatus').textContent = '已保存 ✓';
+    setTimeout(() => { $('cfgStatus').textContent = ''; }, 3000);
+    renderFilterChips('category', 'catChips'); renderFilterChips('domain', 'domChips'); renderConfigForm(); renderChips(); renderCharts(); apply();
+  } catch (e) {
+    $('cfgStatus').textContent = '保存失败：' + e.message;
+  }
+});
+
+// ---------- 标签编辑弹窗 ----------
+function openLabelEditor(b) {
+  activeBookmark = b;
+  $('lmTitle').textContent = `@${b.authorHandle || '未知'} · ${fmtDate(b.postedAt)}`;
+  const catHtml = config.categories.map((d) => {
+    const checked = (b.category || []).includes(d.id) ? 'checked' : '';
+    return `<label class="cb"><input type="checkbox" class="lm-cat" value="${esc(d.id)}" ${checked}> ${esc(d.label)}</label>`;
+  }).join('');
+  const domHtml = config.domains.map((d) => {
+    const checked = (b.domain || []).includes(d.id) ? 'checked' : '';
+    return `<label class="cb"><input type="checkbox" class="lm-dom" value="${esc(d.id)}" ${checked}> ${esc(d.label)}</label>`;
+  }).join('');
+  $('lmBody').innerHTML = `
+    <div class="lm-group"><h4>分类</h4><div class="cb-grid">${catHtml || '<span class="lbl">暂无分类定义</span>'}</div></div>
+    <div class="lm-group"><h4>领域</h4><div class="cb-grid">${domHtml || '<span class="lbl">暂无领域定义</span>'}</div></div>`;
+  $('labelModal').style.display = 'flex';
+}
+$('lmCancel').addEventListener('click', () => { $('labelModal').style.display = 'none'; activeBookmark = null; });
+$('labelModal').addEventListener('click', (e) => { if (e.target === $('labelModal')) { $('labelModal').style.display = 'none'; activeBookmark = null; } });
+$('lmSave').addEventListener('click', async () => {
+  if (!activeBookmark) return;
+  const category = [...document.querySelectorAll('.lm-cat:checked')].map((c) => c.value);
+  const domain = [...document.querySelectorAll('.lm-dom:checked')].map((c) => c.value);
+  try {
+    await fetch('/api/labels', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: activeBookmark.id, category, domain }) });
+    const b = all.find((x) => x.id === activeBookmark.id);
+    if (b) { b.category = category; b.domain = domain; }
+    $('labelModal').style.display = 'none';
+    activeBookmark = null;
+    renderFilterChips('category', 'catChips'); renderFilterChips('domain', 'domChips'); apply();
+  } catch (e) {
+    $('classifyStatus').textContent = '保存标签失败：' + e.message;
+  }
+});
+
+// ---------- 分类任务 ----------
+async function refreshStatus() {
+  try {
+    const r = await fetch('/api/status');
+    const s = await r.json();
+    $('classifyInfo').textContent = `分类 ${s.classified}/${s.total} · 领域 ${s.domainClassified}/${s.total} · 并发 ${s.concurrency}`;
+    if (s.job && s.job.running) {
+      $('progressWrap').style.display = 'block';
+      const pct = s.job.total ? (s.job.done / s.job.total * 100) : 0;
+      $('progressBar').style.width = pct.toFixed(1) + '%';
+      const kindName = s.job.kind === 'domain' ? '领域' : '分类';
+      $('classifyStatus').textContent = `正在${kindName} ${s.job.done}/${s.job.total}${s.job.errors ? '（失败 ' + s.job.errors + '）' : ''}…`;
+      if (s.job.current) {
+        const bm = all.find((b) => b.id === s.job.current);
+        if (bm) $('classifyStatus').textContent += ' 当前：' + (bm.text || '').slice(0, 50);
+      }
+    } else if (s.job) {
+      $('progressWrap').style.display = 'none';
+      $('progressBar').style.width = '0%';
+      $('classifyStatus').textContent = s.job.errors
+        ? `本轮完成：${s.job.total} 条，成功 ${s.job.total - s.job.errors}，失败 ${s.job.errors}`
+        : `本轮完成：${s.job.total} 条`;
+      stopPolling();
+      load(); // 刷新分类
+    }
+    return s;
+  } catch { return null; }
+}
+
+function stopPolling() { if (jobTimer) { clearInterval(jobTimer); jobTimer = null; } }
+
+async function startClassify(ids, force, kind) {
+  let list = ids;
+  if (!list) {
+    if (force) list = all.map((b) => b.id);
+    else list = all.filter((b) => !(kind === 'domain' ? b.domain : b.category || []).length).map((b) => b.id);
+  }
+  if (!list.length) { $('classifyStatus').textContent = kind === 'domain' ? '领域已全部分类' : '没有需要分类的书签'; return; }
+  const r = await fetch('/api/classify', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ids: list, kind }),
+  });
+  if (r.status === 409) { $('classifyStatus').textContent = '分类任务已在运行中'; return; }
+  const d = await r.json();
+  if (!d.started) { $('classifyStatus').textContent = d.message || '无需分类'; return; }
+  $('classifyStatus').textContent = `开始${kind === 'domain' ? '领域' : '分类'} ${d.total} 条…`;
+  stopPolling();
+  jobTimer = setInterval(refreshStatus, 2000);
+  refreshStatus();
+}
+
+$('btnAll').addEventListener('click', () => startClassify(null, false, 'category'));
+$('btnAllForce').addEventListener('click', () => startClassify(null, true, 'category'));
+$('btnDomain').addEventListener('click', () => startClassify(null, false, 'domain'));
+$('btnFiltered').addEventListener('click', () => startClassify(filtered.map((b) => b.id), false, 'category'));
+
+$('q').addEventListener('input', apply);
+$('fAuthor').addEventListener('input', apply);
+$('fLang').addEventListener('change', apply);
+$('fFrom').addEventListener('change', () => { $('fPreset').value = 'custom'; apply(); });
+$('fTo').addEventListener('change', () => { $('fPreset').value = 'custom'; apply(); });
+$('fPreset').addEventListener('change', () => { applyPreset(); apply(); });
+$('filterChips').addEventListener('click', (e) => {
+  const chip = e.target.closest('.active-chip');
+  if (chip) { clearFilter(chip.dataset.key); apply(); }
+});
+$('btnClearFilters').addEventListener('click', clearAllFilters);
+document.addEventListener('click', (e) => {
+  const chip = e.target.closest('.fchip');
+  if (!chip) return;
+  const kind = chip.dataset.kind;
+  const id = chip.dataset.id;
+  const s = selState(kind);
+  if (s.has(id)) s.delete(id); else s.add(id);
+  renderFilterChips(kind, kind === 'category' ? 'catChips' : 'domChips');
+  apply();
+});
+
+// ---------- 命令工具 / 任务队列 ----------
+let toolCommands = [];
+const taskCache = {}; // id -> { sum, out: [] }
+let toolTimer = null;
+
+const STATUS_TEXT = { queued: '排队中', running: '运行中', done: '完成', error: '失败', cancelled: '已取消' };
+
+function fmtClock(ts) {
+  if (!ts) return '';
+  const d = new Date(ts);
+  const p = (n) => String(n).padStart(2, '0');
+  return `${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+}
+
+function statusBadge(s) {
+  return `<span class="st ${esc(s)}">${STATUS_TEXT[s] || s}</span>`;
+}
+
+async function loadCommands() {
+  try {
+    const r = await fetch('/api/commands');
+    const d = await r.json();
+    toolCommands = d.commands || [];
+    $('cmdGrid').innerHTML = toolCommands.map((c) => `
+      <button class="cmd-btn" data-run="${esc(c.name)}" title="ft ${esc(c.name)}">
+        <span class="cmd-name">▶ ${esc(c.label)}</span>
+        <span class="cmd-desc">${esc(c.desc)}</span>
+      </button>`).join('');
+  } catch (e) { /* 工具页不可用不阻塞主界面 */ }
+}
+
+async function startTask(name) {
+  try {
+    const r = await fetch('/api/tasks', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name }) });
+    if (!r.ok) { const d = await r.json().catch(() => ({})); alert(d.error || '入队失败'); return; }
+    const d = await r.json();
+    taskCache[d.task.id] = { sum: d.task, out: [] };
+    pollTasks();
+  } catch (e) {
+    alert('入队失败：' + e.message);
+  }
+}
+
+async function cancelTask(id) {
+  try { await fetch(`/api/tasks/${id}/cancel`, { method: 'POST' }); pollTasks(); } catch { /* ignore */ }
+}
+
+async function fetchOutput(t) {
+  const c = taskCache[t.id];
+  if (!c) return;
+  const since = c.out.length;
+  try {
+    const r = await fetch(`/api/tasks/${t.id}?since=${since}`);
+    const d = await r.json();
+    if (d.output && d.output.length) c.out.push(...d.output);
+    c.sum = d.task || t;
+  } catch { /* 轮询失败跳过 */ }
+}
+
+async function pollTasks() {
+  try {
+    const r = await fetch('/api/tasks');
+    const d = await r.json();
+    const ids = new Set((d.tasks || []).map((t) => t.id));
+    for (const [id, c] of Object.entries(taskCache)) if (!ids.has(id)) delete taskCache[id];
+    const fetches = [];
+    for (const t of d.tasks || []) {
+      const c = taskCache[t.id] || (taskCache[t.id] = { sum: t, out: [] });
+      c.sum = t;
+      if (t.status === 'running' || c.out.length < (t.outLen || 0)) fetches.push(fetchOutput(t));
+    }
+    await Promise.all(fetches);
+    renderTasks();
+  } catch { /* 服务不可用时静默 */ }
+}
+
+const openTasks = new Set(); // 已展开的任务 id（重渲染时恢复展开/滚动）
+
+function renderTasks() {
+  const list = Object.values(taskCache).sort((a, b) => (b.sum.createdAt || 0) - (a.sum.createdAt || 0));
+  $('taskCount').textContent = `${list.length} 个任务`;
+  if (!list.length) { $('taskList').innerHTML = '<div class="empty-muted">暂无任务</div>'; return; }
+  const scrolls = {}; // 重渲染前记住已展开任务的滚动位置
+  document.querySelectorAll('.task.open').forEach((el) => {
+    const out = el.querySelector('.task-out');
+    if (out) scrolls[el.dataset.id] = out.scrollTop;
+  });
+  $('taskList').innerHTML = list.map(({ sum: t, out }) => {
+    const running = t.status === 'running';
+    const cancelBtn = (t.status === 'running' || t.status === 'queued')
+      ? `<button class="btn ghost sm" data-cancel="${esc(t.id)}">取消</button>` : '';
+    const outHtml = out.length
+      ? out.map((l) => esc(l).replace(/\u001b\[[0-9;]*[A-Za-z]/g, '').replace(/^\$ /, '<span class="prompt">$ </span>')).join('\n')
+      : '<span class="tail">（暂无输出）</span>';
+    const time = (t.status === 'running' ? '开始 ' + fmtClock(t.startedAt) : (t.finishedAt ? '结束 ' + fmtClock(t.finishedAt) : fmtClock(t.createdAt) ? '创建 ' + fmtClock(t.createdAt) : ''));
+    return `<div class="task${running ? ' running' : ''}${openTasks.has(t.id) ? ' open' : ''}" data-id="${esc(t.id)}">
+      <div class="task-head">
+        ${statusBadge(t.status)}
+        <span class="task-name">${esc(t.name)}</span>
+        <span class="task-time">${esc(time)}${t.exitCode != null && t.status === 'error' ? ' · 退出码 ' + t.exitCode : ''}</span>
+        ${cancelBtn}
+      </div>
+      <div class="task-out">${outHtml}</div>
+    </div>`;
+  }).join('');
+  // 恢复展开任务的滚动位置；运行中的自动跟随滚到底部
+  requestAnimationFrame(() => {
+    for (const { sum: t } of list) {
+      if (!openTasks.has(t.id)) continue;
+      const out = document.querySelector(`.task[data-id="${t.id}"] .task-out`);
+      if (!out) continue;
+      out.scrollTop = t.status === 'running' ? out.scrollHeight : (scrolls[t.id] ?? out.scrollHeight);
+    }
+  });
+}
+
+$('cmdGrid').addEventListener('click', (e) => {
+  const btn = e.target.closest('[data-run]');
+  if (btn) startTask(btn.dataset.run);
+});
+
+$('taskList').addEventListener('click', (e) => {
+  const cancel = e.target.closest('[data-cancel]');
+  if (cancel) { e.stopPropagation(); cancelTask(cancel.dataset.cancel); return; }
+  const task = e.target.closest('.task');
+  if (!task) return;
+  const open = task.classList.toggle('open');
+  if (open) openTasks.add(task.dataset.id); else openTasks.delete(task.dataset.id);
+  if (open) {
+    const c = taskCache[task.dataset.id];
+    if (c && c.sum.status === 'running') {
+      fetchOutput(c.sum).then(() => {
+        const out = task.querySelector('.task-out');
+        if (out) out.scrollTop = out.scrollHeight;
+      });
+    } else {
+      const out = task.querySelector('.task-out');
+      if (out) out.scrollTop = out.scrollHeight;
+    }
+  }
+});
+
+// ---------- 标签页 ----------
+document.querySelectorAll('.tab').forEach((t) => t.addEventListener('click', () => {
+  document.querySelectorAll('.tab').forEach((x) => x.classList.toggle('active', x === t));
+  document.querySelectorAll('.page').forEach((p) => p.classList.toggle('active', p.id === 'page-' + t.dataset.page));
+}));
+
+load();
+refreshStatus();
+loadCommands();
+pollTasks();
+toolTimer = setInterval(pollTasks, 2000);
+</script>
+</body>
+</html>
